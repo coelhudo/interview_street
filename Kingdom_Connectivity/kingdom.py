@@ -19,7 +19,8 @@ def get_number_of_paths_between(city_source, city_destiny):
 
     try:
         return calculate_number_of_paths(city_source, city_destiny)
-    except Exception:
+    except Exception, e:
+        print e
         return '\"INFINITE PATHS\"'
 
 
@@ -109,6 +110,7 @@ class KingdomTest(unittest.TestCase):
         city_two.goes_to(city_four)
         city_three.goes_to(city_four)
 
+        self.assertEqual(get_number_of_paths_between(city_one, city_three), 1)
         self.assertEqual(get_number_of_paths_between(city_one, city_four), 3)
 
     def test_infinity_paths(self):
