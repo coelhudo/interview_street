@@ -1,27 +1,30 @@
 import sys
-import unittest
-
-def CityGenerator():
-    identifier_counter = 1
-    while True:
-        city = City(identifier_counter)
-        identifier_counter += 1
-        yield city
 
 def get_number_of_paths_between(city_source, city_destiny):
+
+    class InfinitePathsException:
+        pass
+    #city_destiny will always be the max identifier, no need to strongly identify cicles
+    max_connections = 1
+    for i in range(1, city_destiny.get_identifier()+1):
+        max_connections = i * max_connections
+    max_connections = max_connections
+    variable = {'counter' : 0 } #ugly but it works, simulation nonlocal feature
     def calculate_number_of_paths(city_source, city_destiny):
+        variable['counter'] += 1
+        if variable['counter'] > max_connections + 1:
+            raise InfinitePathsException
         number_of_paths = 0
         if city_source.has_one_way_road_to(city_destiny):
             number_of_paths += 1
-        for city in city_source.destinies:
+        for city in city_source.get_destinies():
             number_of_paths += calculate_number_of_paths(city, city_destiny)
         return number_of_paths
 
     try:
         return calculate_number_of_paths(city_source, city_destiny)
-    except Exception, e:
-        print e
-        return '\"INFINITE PATHS\"'
+    except InfinitePathsException:
+        return 'INFINITE PATHS'
 
 
 class City:
@@ -38,92 +41,30 @@ class City:
     def get_identifier(self):
         return self.identifier
 
-class KingdomTest(unittest.TestCase):
-
-    def setUp(self):
-        self.city_gen = CityGenerator()
-
-    def test_one_city_identifier_creation_manually(self):
-        city_one = City(1)
-
-        self.assertNotEqual(city_one.get_identifier(), 0)
-        self.assertEqual(city_one.get_identifier(), 1)
-
-    def test_one_city_identifier_creation(self):
-        city_one = self.city_gen.next()
-
-        self.assertNotEqual(city_one.get_identifier(), 0)
-        self.assertEqual(city_one.get_identifier(), 1)
-
-    def test_two_city_identifier_creation(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-
-        self.assertEqual(city_one.get_identifier(), 1)
-        self.assertEqual(city_two.get_identifier(), 2)
-
-    def test_existence_of_one_way_road_between_two_cities(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-
-        city_one.goes_to(city_two)
-        self.assertTrue(city_one.has_one_way_road_to(city_two))
-
-    def test_inexistence_of_one_way_road_between_two_cities(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-
-        self.assertFalse(city_one.has_one_way_road_to(city_two))
-
-    def test_number_of_paths_from_two_cities_connected_directly(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-
-        city_one.goes_to(city_two)
-        self.assertTrue(city_one.has_one_way_road_to(city_two))
-        self.assertEqual(get_number_of_paths_between(city_one, city_two), 1)
-
-    def test_number_of_paths_from_two_cities_connected_indirectly(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-        city_three = self.city_gen.next()
-
-        city_one.goes_to(city_two)
-        city_two.goes_to(city_three)
-
-        self.assertTrue(city_one.has_one_way_road_to(city_two))
-        self.assertEqual(get_number_of_paths_between(city_one, city_two), 1)
-        self.assertTrue(city_two.has_one_way_road_to(city_three))
-        self.assertEqual(get_number_of_paths_between(city_two, city_three), 1)
-        self.assertFalse(city_one.has_one_way_road_to(city_three))
-        self.assertEqual(get_number_of_paths_between(city_one, city_three), 1)
-
-    def test_number_of_paths_from_two_cities_connected_directly_and_indirectly(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-        city_three = self.city_gen.next()
-        city_four = self.city_gen.next()
-
-        city_one.goes_to(city_two)
-        city_one.goes_to(city_four)
-        city_two.goes_to(city_three)
-        city_two.goes_to(city_four)
-        city_three.goes_to(city_four)
-
-        self.assertEqual(get_number_of_paths_between(city_one, city_three), 1)
-        self.assertEqual(get_number_of_paths_between(city_one, city_four), 3)
-
-    def test_infinity_paths(self):
-        city_one = self.city_gen.next()
-        city_two = self.city_gen.next()
-
-        city_one.goes_to(city_two)
-        city_two.goes_to(city_one)
-        self.assertEqual(get_number_of_paths_between(city_one, city_two), '\"INFINITE PATHS\"')
+    def get_destinies(self):
+        return self.destinies
 
 if __name__ == '__main__':
-    unittest.main()
+    number_of_cities_and_roads = raw_input()
+    max_cities = int()
+    roads = int()
+    if number_of_cities_and_roads[0].isdigit():
+        max_cities = int(number_of_cities_and_roads[0])
+    if number_of_cities_and_roads[2].isdigit():
+        roads = int(number_of_cities_and_roads[2])
 
-    # number_of_cities_and_roads = raw_input('Insert Number of Cities and Roads\n')
-    # cities = int(number_of_cities_and_roads[0])
-    # roads = int(number_of_cities_and_roads[2])
+    cities = {}
+
+    for i in range(1,roads+1):
+        first_and_second_cities = raw_input()
+        first_city_identifier = int(first_and_second_cities[0])
+        second_city_identifier = int(first_and_second_cities[2])
+        if not first_city_identifier in cities:
+            cities[first_city_identifier] = City(first_city_identifier)
+        if not second_city_identifier in cities:
+            cities[second_city_identifier] = City(second_city_identifier)
+
+        cities[first_city_identifier].goes_to(cities[second_city_identifier])
+
+    if len(cities):
+        print get_number_of_paths_between(cities[1], cities[max_cities])
